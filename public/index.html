@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Docket Form</title>
+    <!-- Bootstrap CSS (replace with your preferred method) -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="mb-4">Docket Form</h1>
+
+      <form id="docketForm">
+        <div class="form-group">
+          <label for="name">Name:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="name"
+            name="name"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="startTime">Start Time:</label>
+          <input
+            type="time"
+            class="form-control"
+            id="startTime"
+            name="startTime"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="endTime">End Time:</label>
+          <input
+            type="time"
+            class="form-control"
+            id="endTime"
+            name="endTime"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="hoursWorked">No. of hours worked:</label>
+          <input
+            type="number"
+            class="form-control"
+            id="hoursWorked"
+            name="hoursWorked"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="ratePerHour">Rate per hour:</label>
+          <input
+            type="number"
+            class="form-control"
+            id="ratePerHour"
+            name="ratePerHour"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="supplierName">Supplier Name:</label>
+          <select
+            class="form-control"
+            id="supplierName"
+            name="supplierName"
+            onchange="fetchPurchaseOrders()"
+            required
+          >
+            <!-- Options will be dynamically populated from the API call -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="purchaseOrder">Purchase Order:</label>
+          <select
+            class="form-control"
+            id="purchaseOrder"
+            name="purchaseOrder"
+            required
+          >
+            <!-- Options will be dynamically populated from the API call -->
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="submitDocket()">
+          Submit Docket
+        </button>
+
+        <a href="/docket-list.html" class="btn btn-primary">View Docket List</a>
+      </form>
+    </div>
+
+    <!-- Bootstrap JS (optional, but needed for some features) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+      // Fetch supplier names from the API
+      fetch('/api/suppliers')
+        .then((response) => response.json())
+        .then((suppliers) => {
+          const supplierDropdown = document.getElementById('supplierName')
+          suppliers.forEach((supplier) => {
+            const option = document.createElement('option')
+            option.value = supplier
+            option.text = supplier
+            supplierDropdown.appendChild(option)
+          })
+        })
+        .catch((error) =>
+          console.error('Error fetching supplier names:', error)
+        )
+
+      // Function to fetch and populate the purchase order dropdown based on selected supplier
+      async function fetchPurchaseOrders() {
+        const selectedSupplier = document.getElementById('supplierName').value
+        const purchaseOrderDropdown = document.getElementById('purchaseOrder')
+
+        try {
+          const response = await fetch('/api/purchase-orders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ supplierName: selectedSupplier }), // Correct the key to 'supplierName'
+          })
+
+          const purchaseOrders = await response.json()
+
+          // Clear existing options
+          purchaseOrderDropdown.innerHTML = ''
+
+          // Populate purchase order dropdown with the fetched data
+          purchaseOrders.forEach((po) => {
+            const option = document.createElement('option')
+            option.value = po['PO Number']
+            option.text = po['PO Number'] // Adjust as needed
+            purchaseOrderDropdown.appendChild(option)
+          })
+        } catch (error) {
+          console.error('Error fetching purchase orders:', error)
+        }
+      }
+
+      function submitDocket() {
+        const form = document.getElementById('docketForm')
+        const formData = new FormData(form)
+
+        // Create a JavaScript object from the form data
+        const docketData = {}
+        formData.forEach((value, key) => {
+          docketData[key] = value
+        })
+
+        // Make a POST request to submit the docket data
+        fetch('/api/submit-docket', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(docketData),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Handle the response data as needed
+            console.log('Docket submission response:', data)
+          })
+          .catch((error) => console.error('Error submitting docket:', error))
+      }
+    </script>
+  </body>
+</html>
